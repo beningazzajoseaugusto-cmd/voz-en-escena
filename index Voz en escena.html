@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Voz en escena · Sorteador de diálogos</title>
+<style>
+  :root {
+    --bg: #1b1b1d;
+    --surface: #242427;
+    --surface-2: #2e2e32;
+    --line: #3a3a3e;
+    --text: #f3f1ec;
+    --text-muted: #a8a6a2;
+    --accent: #e0843c;
+    --accent-soft: #3a2c20;
+    --accent-text: #f6c89a;
+    --radius: 14px;
+    --radius-sm: 8px;
+    font-size: 16px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 0 3rem;
+  }
+
+  header {
+    width: 100%;
+    padding: 2.25rem 1.5rem 1.5rem;
+    text-align: center;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .eyebrow {
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent-text);
+    margin: 0 0 0.4rem;
+    font-weight: 600;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  main {
+    width: 100%;
+    max-width: 480px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  nav.tabs {
+    display: flex;
+    gap: 6px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 4px;
+  }
+
+  nav.tabs button {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.6rem 0.4rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  nav.tabs button.active {
+    background: var(--accent);
+    color: #1b1b1d;
+  }
+
+  .view { display: none; flex-direction: column; gap: 1rem; }
+  .view.active { display: flex; }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    justify-content: center;
+  }
+
+  .panel .placeholder {
+    color: var(--text-muted);
+    text-align: center;
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .card-item .label {
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent-text);
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+    display: block;
+  }
+
+  .card-item .value {
+    font-size: 1.05rem;
+    line-height: 1.55;
+    font-weight: 500;
+  }
+
+  .filters {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .filter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 0.6rem 0.7rem;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .filter input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .filter.checked { color: var(--text); }
+
+  button.primary {
+    background: var(--accent);
+    color: #1b1b1d;
+    border: none;
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 1rem;
+    border-radius: var(--radius);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: transform 0.08s ease, opacity 0.15s ease;
+  }
+  button.primary:active { transform: scale(0.98); }
+
+  p.hint {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    line-height: 1.6;
+    margin: 0;
+    text-align: center;
+  }
+
+  /* Banco editor */
+  .banco-subtabs {
+    display: flex;
+    gap: 6px;
+  }
+  .banco-subtabs button {
+    flex: 1;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.5rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+  }
+  .banco-subtabs button.active {
+    border-color: var(--accent);
+    color: var(--accent-text);
+  }
+
+  .banco-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+
+  .banco-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 0.65rem 0.8rem;
+    font-size: 0.85rem;
+  }
+  .banco-row .text { flex: 1; line-height: 1.4; }
+  .banco-row button {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 0 0.2rem;
+    line-height: 1;
+  }
+  .banco-row button:hover { color: var(--accent); }
+
+  .banco-add {
+    display: flex;
+    gap: 6px;
+  }
+  .banco-add input {
+    flex: 1;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    padding: 0.65rem 0.8rem;
+    font-size: 0.85rem;
+  }
+  .banco-add input::placeholder { color: var(--text-muted); }
+  .banco-add button {
+    background: var(--accent);
+    color: #1b1b1d;
+    border: none;
+    border-radius: var(--radius-sm);
+    width: 44px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .reset-link {
+    text-align: center;
+    margin-top: 0.5rem;
+  }
+  .reset-link button {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0.5rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <p class="eyebrow">Voz en escena</p>
+  <h1>Sorteador de diálogos</h1>
+</header>
+
+<main>
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="docente">Docente</button>
+    <button class="tab-btn" data-tab="alumno">Estudiante</button>
+    <button class="tab-btn" data-tab="banco">Editar</button>
+  </nav>
+
+  <!-- DOCENTE -->
+  <section class="view active" id="view-docente">
+    <div class="filters">
+      <label class="filter checked">
+        <input type="checkbox" id="f-situacion" checked />
+        Situación
+      </label>
+      <label class="filter">
+        <input type="checkbox" id="f-consigna" />
+        Consigna
+      </label>
+      <label class="filter checked">
+        <input type="checkbox" id="f-palabras" checked />
+        Palabras
+      </label>
+    </div>
+
+    <div class="panel" id="docente-panel">
+      <p class="placeholder">Tocá "Sortear" para empezar</p>
+    </div>
+
+    <button class="primary" id="btn-docente">Sortear</button>
+  </section>
+
+  <!-- ALUMNO -->
+  <section class="view" id="view-alumno">
+    <p class="hint">Cada pareja toca el botón y arma su escena con lo que les toque.</p>
+    <div class="panel" id="alumno-panel">
+      <p class="placeholder">Toquen "Nos toca" para recibir su combinación</p>
+    </div>
+    <button class="primary" id="btn-alumno">Nos toca</button>
+  </section>
+
+  <!-- BANCO -->
+  <section class="view" id="view-banco">
+    <div class="banco-subtabs">
+      <button class="banco-sub active" data-banco="situaciones">Situaciones</button>
+      <button class="banco-sub" data-banco="consignas">Consignas</button>
+      <button class="banco-sub" data-banco="palabras">Palabras</button>
+    </div>
+
+    <div class="banco-list" id="banco-list"></div>
+
+    <div class="banco-add" id="banco-add-single">
+      <input type="text" id="banco-input" placeholder="Agregar nueva..." />
+      <button id="banco-add-btn">+</button>
+    </div>
+
+    <div class="banco-add" id="banco-add-pair" style="display:none;">
+      <input type="text" id="banco-input-a" placeholder="Palabra A" />
+      <input type="text" id="banco-input-b" placeholder="Palabra B" />
+      <button id="banco-add-pair-btn">+</button>
+    </div>
+
+    <div class="reset-link">
+      <button id="banco-reset">Restaurar listas originales</button>
+    </div>
+  </section>
+</main>
+
+<script>
+const STORAGE_KEY = 'voz-en-escena-banco-v1';
+
+const defaults = {
+  situaciones: [
+    "Uno quiere irse y el otro no lo deja",
+    "Uno está mintiendo y el otro empieza a sospechar",
+    "Uno pide perdón y el otro no perdona fácil",
+    "Uno tiene miedo de algo y el otro intenta calmarlo",
+    "Uno está orgulloso de algo y el otro está celoso",
+    "Uno necesita ayuda urgente y el otro no entiende la gravedad",
+    "Uno oculta que está triste y el otro lo nota",
+    "Uno quiere contar un secreto y el otro no quiere escucharlo",
+    "Uno está convenciendo al otro de hacer algo arriesgado",
+    "Uno llega tarde y el otro está furioso",
+    "Uno quiere reconciliarse y el otro todavía está dolido",
+    "Uno está nervioso por algo importante y el otro lo presiona",
+    "Uno descubre algo que no debía ver y el otro lo niega",
+    "Uno está despidiéndose para siempre y el otro no lo sabe",
+    "Uno pide un favor incómodo y el otro duda",
+    "Uno está fingiendo estar bien y el otro insiste en preguntar",
+    "Uno quiere competir y el otro quiere evitar el conflicto",
+    "Uno cuenta una buena noticia y el otro reacciona con envidia",
+    "Uno intenta dar una mala noticia con cuidado y el otro lo presiona para que hable",
+    "Uno está exagerando algo pequeño y el otro trata de bajarle el tono"
+  ],
+  consignas: [
+    "Todo el diálogo en susurro, pero que se escuche en toda la sala",
+    "Uno habla muy rápido y el otro muy lento, durante todo el diálogo",
+    "Cada uno repite la última palabra que dijo el otro antes de responder",
+    "Todo el diálogo sin mover las manos ni los brazos",
+    "Uno solo puede hacer preguntas, el otro solo puede responder con afirmaciones",
+    "Hablar casi sin abrir la boca (sin mover los labios)",
+    "Cada frase debe empezar con la última letra de la frase anterior",
+    "Todo el diálogo de espaldas, sin mirarse",
+    "Uno habla en voz muy alta y el otro casi no se escucha",
+    "Cada uno debe terminar la frase del otro antes de continuar",
+    "Todo el diálogo en un solo tono (monótono), sin variar la melodía",
+    "Cada frase debe tener una pausa larga antes de decirla",
+    "Uno solo usa frases cortas (máx. 3 palabras), el otro frases largas",
+    "Todo el diálogo conteniendo la risa",
+    "Repetir mentalmente (en voz baja) la frase del otro antes de responder",
+    "Todo el diálogo caminando muy lento, sin detenerse",
+    "Uno habla mirando hacia arriba, el otro hacia abajo",
+    "Cada frase termina con un suspiro audible",
+    "Todo el diálogo con las manos entrelazadas con el compañero",
+    "Uno solo puede hablar al inhalar, el otro al exhalar"
+  ],
+  palabras: [
+    ["Sí", "No"],
+    ["Vení", "No quiero"],
+    ["Esperá", "Vamos"],
+    ["Quedate", "Basta"],
+    ["Mirá", "Nada"],
+    ["Por favor", "Jamás"],
+    ["Ahora", "Todavía no"],
+    ["Tranquilo", "No puedo"],
+    ["Escuchame", "Para"],
+    ["Volvé", "Se acabó"]
+  ]
+};
+
+function loadBanco() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return JSON.parse(JSON.stringify(defaults));
+}
+function saveBanco() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(banco)); } catch (e) {}
+}
+
+let banco = loadBanco();
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function cardItem(label, value) {
+  return '<div class="card-item"><span class="label">' + label + '</span><span class="value">' + value + '</span></div>';
+}
+
+// --- TABS principales ---
+const tabBtns = document.querySelectorAll('.tab-btn');
+const views = {
+  docente: document.getElementById('view-docente'),
+  alumno: document.getElementById('view-alumno'),
+  banco: document.getElementById('view-banco')
+};
+
+tabBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    tabBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    Object.values(views).forEach(v => v.classList.remove('active'));
+    views[btn.dataset.tab].classList.add('active');
+    if (btn.dataset.tab === 'banco') renderBanco();
+  });
+});
+
+// --- FILTROS DOCENTE ---
+const filterEls = document.querySelectorAll('.filter');
+filterEls.forEach(f => {
+  const input = f.querySelector('input');
+  input.addEventListener('change', () => {
+    f.classList.toggle('checked', input.checked);
+  });
+});
+
+// --- DOCENTE ---
+const fSituacion = document.getElementById('f-situacion');
+const fConsigna = document.getElementById('f-consigna');
+const fPalabras = document.getElementById('f-palabras');
+const docentePanel = document.getElementById('docente-panel');
+const btnDocente = document.getElementById('btn-docente');
+
+btnDocente.addEventListener('click', () => {
+  const parts = [];
+  if (fSituacion.checked && banco.situaciones.length) {
+    parts.push(cardItem('Situación', pick(banco.situaciones)));
+  }
+  if (fConsigna.checked && banco.consignas.length) {
+    parts.push(cardItem('Consigna técnica', pick(banco.consignas)));
+  }
+  if (fPalabras.checked && banco.palabras.length) {
+    const par = pick(banco.palabras);
+    parts.push(cardItem('Palabras fijas', par[0] + ' / ' + par[1]));
+  }
+  docentePanel.innerHTML = parts.length
+    ? parts.join('')
+    : '<p class="placeholder">Activá al menos una categoría arriba</p>';
+});
+
+// --- ALUMNO ---
+const alumnoPanel = document.getElementById('alumno-panel');
+const btnAlumno = document.getElementById('btn-alumno');
+
+btnAlumno.addEventListener('click', () => {
+  const parts = [];
+  if (banco.situaciones.length) {
+    parts.push(cardItem('Situación', pick(banco.situaciones)));
+  }
+  if (banco.palabras.length) {
+    const par = pick(banco.palabras);
+    parts.push(cardItem('Palabras fijas', par[0] + ' / ' + par[1]));
+  }
+  if (Math.random() < 0.5 && banco.consignas.length) {
+    parts.push(cardItem('Extra: consigna técnica', pick(banco.consignas)));
+  }
+  alumnoPanel.innerHTML = parts.join('');
+});
+
+// --- BANCO EDITOR ---
+const bancoSubBtns = document.querySelectorAll('.banco-sub');
+const bancoList = document.getElementById('banco-list');
+const bancoAddSingle = document.getElementById('banco-add-single');
+const bancoAddPair = document.getElementById('banco-add-pair');
+const bancoInput = document.getElementById('banco-input');
+const bancoAddBtn = document.getElementById('banco-add-btn');
+const bancoInputA = document.getElementById('banco-input-a');
+const bancoInputB = document.getElementById('banco-input-b');
+const bancoAddPairBtn = document.getElementById('banco-add-pair-btn');
+const bancoReset = document.getElementById('banco-reset');
+
+let currentBancoTab = 'situaciones';
+
+bancoSubBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    bancoSubBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentBancoTab = btn.dataset.banco;
+    bancoAddSingle.style.display = currentBancoTab === 'palabras' ? 'none' : 'flex';
+    bancoAddPair.style.display = currentBancoTab === 'palabras' ? 'flex' : 'none';
+    renderBanco();
+  });
+});
+
+function renderBanco() {
+  bancoList.innerHTML = '';
+  const items = banco[currentBancoTab];
+  items.forEach((item, idx) => {
+    const row = document.createElement('div');
+    row.className = 'banco-row';
+
+    const text = document.createElement('div');
+    text.className = 'text';
+    text.textContent = currentBancoTab === 'palabras' ? (item[0] + ' / ' + item[1]) : item;
+
+    const del = document.createElement('button');
+    del.setAttribute('aria-label', 'Eliminar');
+    del.textContent = '✕';
+    del.addEventListener('click', () => {
+      banco[currentBancoTab].splice(idx, 1);
+      saveBanco();
+      renderBanco();
+    });
+
+    row.appendChild(text);
+    row.appendChild(del);
+    bancoList.appendChild(row);
+  });
+}
+
+bancoAddBtn.addEventListener('click', () => {
+  const val = bancoInput.value.trim();
+  if (!val) return;
+  banco[currentBancoTab].push(val);
+  bancoInput.value = '';
+  saveBanco();
+  renderBanco();
+});
+bancoInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') bancoAddBtn.click();
+});
+
+bancoAddPairBtn.addEventListener('click', () => {
+  const a = bancoInputA.value.trim();
+  const b = bancoInputB.value.trim();
+  if (!a || !b) return;
+  banco.palabras.push([a, b]);
+  bancoInputA.value = '';
+  bancoInputB.value = '';
+  saveBanco();
+  renderBanco();
+});
+
+bancoReset.addEventListener('click', () => {
+  if (!confirm('¿Restaurar las listas originales? Se perderán los cambios.')) return;
+  banco = JSON.parse(JSON.stringify(defaults));
+  saveBanco();
+  renderBanco();
+});
+</script>
+
+</body>
+</html>
