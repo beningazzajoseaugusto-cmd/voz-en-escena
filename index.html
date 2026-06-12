@@ -56,10 +56,52 @@
   }
 
   h1 {
-    font-size: 1.6rem;
-    font-weight: 600;
+    font-size: 2.4rem;
+    font-weight: 700;
     margin: 0;
     letter-spacing: -0.01em;
+  }
+
+  .subtitle {
+    font-size: 1rem;
+    color: var(--text-muted);
+    margin: 0.4rem 0 0;
+    font-weight: 500;
+  }
+
+  .quote {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-style: italic;
+    text-align: center;
+    line-height: 1.6;
+    margin: 0.75rem 0 0;
+    padding: 0 0.5rem;
+  }
+
+  .lock-screen {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    align-items: center;
+    padding: 1.5rem 0;
+  }
+  .lock-screen input {
+    width: 100%;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    padding: 0.75rem 0.9rem;
+    font-size: 1rem;
+    text-align: center;
+  }
+  .lock-screen input::placeholder { color: var(--text-muted); }
+  .lock-error {
+    color: var(--accent-text);
+    font-size: 0.82rem;
+    text-align: center;
+    min-height: 1.2em;
   }
 
   main {
@@ -284,14 +326,13 @@
 <body>
 
 <header>
-  <p class="eyebrow">Voz en escena</p>
-  <h1>Sorteador de diálogos</h1>
+  <h1>Voz en escena</h1>
+  <p class="subtitle">Sorteador de teatro</p>
 </header>
 
 <main>
   <nav class="tabs">
-    <button class="tab-btn active" data-tab="docente">Docente</button>
-    <button class="tab-btn" data-tab="alumno">Estudiante</button>
+    <button class="tab-btn active" data-tab="docente">Jugá tú mismo</button>
     <button class="tab-btn" data-tab="banco">Editar</button>
   </nav>
 
@@ -317,19 +358,19 @@
     </div>
 
     <button class="primary" id="btn-docente">Sortear</button>
+    <p class="quote" id="quote-text"></p>
   </section>
 
-  <!-- ALUMNO -->
-  <section class="view" id="view-alumno">
-    <p class="hint">Cada pareja toca el botón y arma su escena con lo que les toque.</p>
-    <div class="panel" id="alumno-panel">
-      <p class="placeholder">Toquen "Nos toca" para recibir su combinación</p>
+  <!-- EDITAR (protegido) -->
+  <section class="view" id="view-banco-wrapper">
+    <div class="lock-screen" id="lock-screen">
+      <p class="hint">Esta sección es solo para el docente.</p>
+      <input type="password" id="lock-input" placeholder="Código de acceso" />
+      <button class="primary" id="lock-btn" style="width:100%;">Ingresar</button>
+      <p class="lock-error" id="lock-error"></p>
     </div>
-    <button class="primary" id="btn-alumno">Nos toca</button>
-  </section>
 
-  <!-- BANCO -->
-  <section class="view" id="view-banco">
+    <div class="banco-content" id="banco-content" style="display:none; flex-direction:column; gap:1rem;">
     <div class="banco-subtabs">
       <button class="banco-sub active" data-banco="situaciones">Situaciones</button>
       <button class="banco-sub" data-banco="consignas">Consignas</button>
@@ -351,6 +392,7 @@
 
     <div class="reset-link">
       <button id="banco-reset">Restaurar listas originales</button>
+    </div>
     </div>
   </section>
 </main>
@@ -432,6 +474,19 @@ let banco = loadBanco();
 
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
+const frases = [
+  "El teatro nos hace libres: cada voz que se atreve, ocupa más espacio en el mundo.",
+  "No hay diálogo pequeño si se escucha de verdad.",
+  "Actuar es prestar el cuerpo a otra forma de decir la verdad.",
+  "La voz que se anima a cambiar, también cambia a quien la escucha.",
+  "En el escenario no se finge: se descubre lo que ya estaba.",
+  "Cada ensayo es un permiso para equivocarse en voz alta.",
+  "Hablar distinto es empezar a pensar distinto.",
+  "El silencio también es parte del diálogo.",
+  "Jugar en escena es animarse a ser, por un momento, otra persona sin dejar de ser uno mismo.",
+  "La escucha es el primer gesto de toda actuación."
+];
+
 function cardItem(label, value) {
   return '<div class="card-item"><span class="label">' + label + '</span><span class="value">' + value + '</span></div>';
 }
@@ -440,9 +495,31 @@ function cardItem(label, value) {
 const tabBtns = document.querySelectorAll('.tab-btn');
 const views = {
   docente: document.getElementById('view-docente'),
-  alumno: document.getElementById('view-alumno'),
-  banco: document.getElementById('view-banco')
+  banco: document.getElementById('view-banco-wrapper')
 };
+
+const lockScreen = document.getElementById('lock-screen');
+const bancoContent = document.getElementById('banco-content');
+const lockInput = document.getElementById('lock-input');
+const lockBtn = document.getElementById('lock-btn');
+const lockError = document.getElementById('lock-error');
+const ACCESS_CODE = 'Vicky.123';
+let unlocked = false;
+
+function tryUnlock() {
+  if (lockInput.value === ACCESS_CODE) {
+    unlocked = true;
+    lockScreen.style.display = 'none';
+    bancoContent.style.display = 'flex';
+    renderBanco();
+  } else {
+    lockError.textContent = 'Código incorrecto';
+  }
+}
+lockBtn.addEventListener('click', tryUnlock);
+lockInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') tryUnlock();
+});
 
 tabBtns.forEach(btn => {
   btn.addEventListener('click', () => {
@@ -450,7 +527,7 @@ tabBtns.forEach(btn => {
     btn.classList.add('active');
     Object.values(views).forEach(v => v.classList.remove('active'));
     views[btn.dataset.tab].classList.add('active');
-    if (btn.dataset.tab === 'banco') renderBanco();
+    if (btn.dataset.tab === 'banco' && unlocked) renderBanco();
   });
 });
 
@@ -485,25 +562,7 @@ btnDocente.addEventListener('click', () => {
   docentePanel.innerHTML = parts.length
     ? parts.join('')
     : '<p class="placeholder">Activá al menos una categoría arriba</p>';
-});
-
-// --- ALUMNO ---
-const alumnoPanel = document.getElementById('alumno-panel');
-const btnAlumno = document.getElementById('btn-alumno');
-
-btnAlumno.addEventListener('click', () => {
-  const parts = [];
-  if (banco.situaciones.length) {
-    parts.push(cardItem('Situación', pick(banco.situaciones)));
-  }
-  if (banco.palabras.length) {
-    const par = pick(banco.palabras);
-    parts.push(cardItem('Palabras fijas', par[0] + ' / ' + par[1]));
-  }
-  if (Math.random() < 0.5 && banco.consignas.length) {
-    parts.push(cardItem('Extra: consigna técnica', pick(banco.consignas)));
-  }
-  alumnoPanel.innerHTML = parts.join('');
+  document.getElementById('quote-text').textContent = pick(frases);
 });
 
 // --- BANCO EDITOR ---
